@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">There Yet Johnson NA</string>
+    <string name="providerText">Provider:</string>
+    <string name="latitudeText">Latitude:</string>
+    <string name="longitudeText">Longitude:</string>
+    <string name="newLocationText">New Location</string>
+</resources>
