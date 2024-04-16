@@ -4,4 +4,5 @@
     <string name="latitudeText">Latitude:</string>
     <string name="longitudeText">Longitude:</string>
     <string name="newLocationText">New Location</string>
+    <string name="denied">"Permission Denied. Distance finding will not work!"</string>
 </resources>

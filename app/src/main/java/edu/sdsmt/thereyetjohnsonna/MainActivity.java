@@ -2,16 +2,25 @@ package edu.sdsmt.thereyetjohnsonna;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.location.LocationManager;
+import android.location.LocationProvider;
+import android.location.provider.ProviderProperties;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.WindowManager;
 import android.widget.TextView;
 
-import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.core.app.ActivityCompat;
+import androidx.core.location.LocationListenerCompat;
 
+import android.Manifest;
+import android.widget.Toast;
+
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
@@ -35,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView viewLatitude;
     private TextView viewLongitude;
     private TextView viewTo;
+    private final ActiveListener activeListener = new ActiveListener();
+    private static final int NEED_PERMISSIONS = 1;
 
 
     @Override
@@ -52,9 +63,10 @@ public class MainActivity extends AppCompatActivity {
         viewLongitude = findViewById(R.id.textLongitude);
         viewTo = findViewById(R.id.textTo);
 
-        latitude = 44.076708;
-        longitude = -103.210499;
-        valid = true;
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        // Force the screen to say on and bright
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
 
@@ -69,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         viewProvider.setText("");
 
         setUI();
+        registerListeners();
     }
 
     /**
@@ -77,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        unregisterListeners();
     }
 
     /**
@@ -113,5 +127,104 @@ public class MainActivity extends AppCompatActivity {
         double distance = EARTH_RADIUS_METERS * c;
 
         return Math.round(distance * 10.0) / 10.0;
+    }
+
+    private void registerListeners() {
+        unregisterListeners();
+
+        //register if permitted, and request permission if not
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+            //base selection on best accurcy, and nothing else
+            List<String> providers = locationManager.getProviders(true);
+            String bestAvailable = providers.get(0);
+            for (int i = 1; i < providers.size(); i++) {
+
+                //use LocationProvider is under android S, and provider properties if over to check accuracy
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
+                    LocationProvider loc = locationManager.getProvider(providers.get(i));
+                    if (loc.getAccuracy() < locationManager.getProvider(bestAvailable).getAccuracy()) {
+                        bestAvailable = providers.get(i);
+                    }
+                } else {
+                    ProviderProperties loc = locationManager.getProviderProperties(providers.get(i));
+                    if (loc.getAccuracy() < locationManager.getProviderProperties(bestAvailable).getAccuracy()) {
+                        bestAvailable = providers.get(i);
+                    }
+                }
+            }
+
+            //if location is availble request locaiton updates
+            if (!bestAvailable.equals(LocationManager.PASSIVE_PROVIDER)) {
+                locationManager.requestLocationUpdates(bestAvailable, 500, 1, activeListener);
+                TextView viewProvider = findViewById(R.id.textProvider);
+                viewProvider.setText(bestAvailable);
+                Location location = locationManager.getLastKnownLocation(bestAvailable);
+                onLocation(location);
+            }
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, NEED_PERMISSIONS);
+        }
+    }
+
+    private void unregisterListeners() {
+        locationManager.removeUpdates(activeListener);
+    }
+
+    /**
+     * Handle when a new location if found by updating the latitude and longitude
+     *
+     * @param location the current device location
+     */
+    private void onLocation(Location location) {
+        if (location == null) {
+            return;
+        }
+
+        latitude = location.getLatitude();
+        longitude = location.getLongitude();
+        valid = true;
+
+        setUI();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case NEED_PERMISSIONS:
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Try registering again
+                    registerListeners();
+
+                } else {
+
+                    // permission denied, boo! Tell the users the app won't work now
+                    Toast.makeText(getApplicationContext(), R.string.denied, Toast.LENGTH_SHORT).show();
+                }
+                break;
+        }
+    }
+
+    private class ActiveListener implements LocationListenerCompat {
+
+        @Override
+        public void onLocationChanged(@NonNull Location location) {
+            onLocation(location);
+        }
+
+        @Override
+        public void onProviderEnabled(@NonNull String provider) {
+            registerListeners();
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            registerListeners();
+        }
     }
 }
