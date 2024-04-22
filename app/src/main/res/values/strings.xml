@@ -4,5 +4,17 @@
     <string name="latitudeText">Latitude:</string>
     <string name="longitudeText">Longitude:</string>
     <string name="newLocationText">New Location</string>
-    <string name="denied">"Permission Denied. Distance finding will not work!"</string>
+    <string name="denied">Permission Denied. Distance finding will not work!</string>
+    <string name="mclaury">McLaury</string>
+    <string name="grubby">Grubby</string>
+    <string name="home">Home</string>
+    <string name="exception">Failed to communicate with geolocation services</string>
+    <string name="couldnotfind">Unable to locate address</string>
+    <string name="newButtonText">New</string>
+    <string name="addressOrLocationText">Address or location</string>
+    <string name="distanceText">Distance</string>
+    <string name="textTo">To</string>
+    <string name="textLongitude">Longitude</string>
+    <string name="provider">Provider</string>
+    <string name="latitude">Latitude</string>
 </resources>
